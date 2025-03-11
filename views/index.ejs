@@ -228,7 +228,7 @@
                 resultsContainer.innerHTML = ''
             }
 
-            const response = await fetch(`/query/${encodeURIComponent(searchTerm)}`);
+            const response = await fetch(`/anime/query/${encodeURIComponent(searchTerm)}`);
             const animes = await response.json();
 
             resultsContainer.innerHTML = animes.map(anime => `
@@ -245,7 +245,7 @@
             openModal(animeTitle);
             episodesList.innerHTML = '<div>Cargando episodios...</div>';
 
-            const response = await fetch(`/episode/${animeSlug}`);
+            const response = await fetch(`/anime/episode/${animeSlug}`);
             const episodes = await response.json();
 
             episodesList.innerHTML = episodes.map(episode => `
@@ -257,7 +257,7 @@
 
         const loadProviders = async (animeSlug, episodeId) => {
             openProviderModal();
-            const response = await fetch(`/episode/${animeSlug}/${episodeId}`);
+            const response = await fetch(`/anime/episode/${animeSlug}/${episodeId}`);
             const providers = await response.json();
 
             providersList.innerHTML = providers.map(provider => `
