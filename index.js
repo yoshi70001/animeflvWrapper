@@ -2,14 +2,17 @@ import express from "express";
 import { getAnimes } from "./libs/search.js";
 import { getVideos } from "./libs/videos.js";
 import { getEpisodes } from "./libs/episodes.js";
+import { getLast } from "./libs/index.js";
 
 const app = express();
 const port = 3000;
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.set("view engine", "ejs");
-app.get("/", (req, res) => {
-  res.render("index", {});
+app.get("/", async (req, res) => {
+  const last = await getLast();
+  console.log(last);
+  res.render("index", { last: last });
 });
 
 app.get("/query/:animequery", async (req, res) => {
