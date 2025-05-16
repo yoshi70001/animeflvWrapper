@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Habilita View Transitions -->
+    <meta name="view-transition" content="same-origin" />
+    <title>Buscador de Animes</title>
+    <style>
+        /* --- ESTILOS BÁSICOS (Similares a los anteriores, pero sin modales/reproductor) --- */
+        :root {
+            /* Variables CSS para consistencia */
+            --primary-color: #007bff;
+            --light-gray: #f8f9fa;
+            --medium-gray: #e0e0e0;
+            --dark-gray: #333;
+            --card-bg: #fff;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+            --hover-shadow-color: rgba(0, 0, 0, 0.15);
+            --border-radius: 12px;
+            --focus-outline-color: #0056b3;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+                Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+                sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        #searchInput {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            outline: none;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        #searchInput:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.25);
+        }
+
+        .search-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+            min-height: 100px;
+        }
+
+        .loading-indicator,
+        .error-message,
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 2rem;
+            font-size: 1.1rem;
+            color: #6c757d;
+        }
+
+        .error-message {
+            color: #dc3545;
+            font-weight: 500;
+        }
+
+        /* --- Estilos de la Tarjeta (AHORA ES UN ENLACE <a>) --- */
+        .anime-card-link {
+            display: block;
+            /* Hacer que el enlace ocupe el espacio */
+            text-decoration: none;
+            /* Quitar subrayado del enlace */
+            color: inherit;
+            /* Heredar color de texto */
+            background: var(--card-bg);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+            box-shadow: 0 4px 6px var(--shadow-color);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+
+        .anime-card-link:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 12px var(--hover-shadow-color);
+        }
+
+        .anime-card-link:focus-visible {
+            /* Estilo de foco para teclado */
+            outline: 3px solid var(--focus-outline-color);
+            outline-offset: 2px;
+            box-shadow: 0 8px 12px var(--hover-shadow-color);
+            /* Opcional: resaltar también */
+        }
+
+        .anime-card-link img {
+            aspect-ratio: 262.25 / 373.19;
+            width: 100%;
+            object-fit: cover;
+            display: block;
+            background-color: #eee;
+            min-height: 370px;
+            /* Ajustar si es necesario */
+            /* Nombre de transición para la imagen (importante para la animación) */
+            view-transition-name: var(--anime-image-transition-name);
+        }
+
+        .anime-card-link .movie-info {
+            padding: 1rem;
+        }
+
+        .anime-card-link .movie-info h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            /* Nombre de transición para el título */
+            view-transition-name: var(--anime-title-transition-name);
+        }
+
+        /* --- Estilo para el contenedor de la tarjeta para la transición principal --- */
+        .anime-card-link {
+            /* Nombre de transición para la tarjeta completa */
+            view-transition-name: var(--anime-card-transition-name);
+            contain: layout;
+            /* Ayuda a optimizar la transición */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Buscador de Animes</h1>
+        <input type="text" id="searchInput" placeholder="Escribe el nombre de un anime (mín. 3 letras)..."
+            aria-label="Buscar animes" />
+        <div id="resultsContainer" class="search-results">
+            <!-- Resultados de la búsqueda (o iniciales) se cargarán aquí -->
+            <% if (typeof last !=='undefined' && last.length> 0) { %> <% for(var i=0; i < last.length; i++) { %>
+                    <%# Codificar los componentes de la URL para seguridad %>
+                        <% const encodedSlug=encodeURIComponent(last[i].slug); %>
+                            <% const encodedTitle=encodeURIComponent(last[i].title); %>
+                                <% const encodedImage=encodeURIComponent(last[i].image); %>
+                                    <%# Crear nombres únicos para View Transitions %>
+                                        <% const cardTransitionName=`anime-card-${encodedSlug}`; %>
+                                            <% const imageTransitionName=`anime-image-${encodedSlug}`; %>
+                                                <% const titleTransitionName=`anime-title-${encodedSlug}`; %>
+                                                    <a href="/anime?slug=<%= encodedSlug %>&title=<%= encodedTitle %>&image=<%= encodedImage %>"
+                                                        class="anime-card-link" style="
+            --anime-card-transition-name: <%= cardTransitionName %>;
+            --anime-image-transition-name: <%= imageTransitionName %>;
+            --anime-title-transition-name: <%= titleTransitionName %>;
+          ">
+                                                        <img loading="lazy" style="content-visibility: auto"
+                                                            src="<%= last[i].image %>" alt="<%= last[i].title %>" />
+                                                        <div class="movie-info">
+                                                            <h3>
+                                                                <%= last[i].title %>
+                                                            </h3>
+                                                        </div>
+                                                    </a>
+                                                    <% } %>
+                                                        <% } else { %>
+                                                            <div class="no-results">
+                                                                Empieza escribiendo en la barra de búsqueda.
+                                                            </div>
+                                                            <% } %>
+        </div>
+    </div>
+
+    <script>
+        const searchInput = document.getElementById("searchInput");
+        const resultsContainer = document.getElementById("resultsContainer");
+        let debounceTimer;
+
+        const handleSearch = async (searchTerm) => {
+            resultsContainer.innerHTML =
+                '<div class="loading-indicator">Buscando...</div>';
+            try {
+                const response = await fetch(
+                    `/query/${encodeURIComponent(searchTerm)}`
+                );
+                if (!response.ok)
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                const animes = await response.json();
+
+                if (animes.length === 0) {
+                    resultsContainer.innerHTML =
+                        '<div class="no-results">No se encontraron animes que coincidan.</div>';
+                } else {
+                    resultsContainer.innerHTML = animes
+                        .map((anime) => {
+                            const encodedSlug = encodeURIComponent(anime.slug);
+                            const encodedTitle = encodeURIComponent(anime.title);
+                            // Usar banner si está disponible, si no, intentar con 'image' u otro campo
+                            const encodedImage = encodeURIComponent(
+                                anime.banner || anime.image || ""
+                            );
+                            const cardTransitionName = `anime-card-${encodedSlug}`;
+                            const imageTransitionName = `anime-image-${encodedSlug}`;
+                            const titleTransitionName = `anime-title-${encodedSlug}`;
+
+                            // Asegúrate de que la imagen (anime.banner) existe
+                            const imageUrl = anime.banner || "/placeholder.png"; // Proporciona una imagen por defecto si no hay banner
+
+                            return `
+                        <a href="/anime?slug=${encodedSlug}&title=${encodedTitle}&image=${encodedImage}"
+                           class="anime-card-link"
+                           style="--anime-card-transition-name: ${cardTransitionName}; --anime-image-transition-name: ${imageTransitionName}; --anime-title-transition-name: ${titleTransitionName};">
+                            <img loading="lazy" src="${imageUrl}" alt="${anime.title}">
+                            <div class="movie-info">
+                                <h3>${anime.title}</h3>
+                            </div>
+                        </a>`;
+                        })
+                        .join("");
+                }
+            } catch (error) {
+                console.error("Error fetching search results:", error);
+                resultsContainer.innerHTML =
+                    '<div class="error-message">Hubo un error al buscar. Inténtalo de nuevo más tarde.</div>';
+            }
+        };
+
+        searchInput.addEventListener("input", (e) => {
+            clearTimeout(debounceTimer);
+            const searchTerm = e.target.value.trim();
+            if (searchTerm.length >= 3) {
+                debounceTimer = setTimeout(() => {
+                    handleSearch(searchTerm);
+                }, 500);
+            } else {
+                if (searchTerm.length === 0) {
+                    // Aquí podrías decidir volver a cargar la lista inicial 'last'
+                    // o simplemente mostrar un mensaje
+                    resultsContainer.innerHTML =
+                        '<div class="no-results">Escribe al menos 3 letras para buscar.</div>';
+                } else {
+                    resultsContainer.innerHTML = ""; // Limpiar si es corto
+                }
+            }
+        });
+
+        // Opcional: precargar resultados iniciales si searchTerm está vacío al cargar
+        // if (searchInput.value.trim().length === 0 && typeof last !== 'undefined' && last.length > 0) {
+        //      // El EJS ya renderiza 'last', así que no hace falta hacer nada aquí
+        //      // si quieres que se muestren al inicio.
+        // } else if (searchInput.value.trim().length === 0) {
+        //     resultsContainer.innerHTML = '<div class="no-results">Empieza escribiendo en la barra de búsqueda.</div>';
+        // }
+    </script>
+</body>
+
+</html>
