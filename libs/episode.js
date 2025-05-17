@@ -23,8 +23,10 @@ async function getEpisodes(slug) {
 
       if (episodesMatch) {
         const episodes = JSON.parse(episodesMatch[1]);
-        // console.log(episodes);
-        return episodes;
+
+        return episodes.map((episode) => {
+          return { nro: episode[0], id: episode[1] };
+        });
       } else {
         console.log("No se encontró el array de episodes.");
         return [];
